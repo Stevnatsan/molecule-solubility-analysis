@@ -69,8 +69,8 @@ source .venv/bin/activate            # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
 jupyter notebook notebooks/solubility_analysis.ipynb   # re-run the analysis and charts
-python scripts/build_dashboard.py                       # rebuild the dashboard data
-python -m http.server 8000 --directory docs             # then open http://localhost:8000
+python scripts/build_dashboard.py                       # rebuild the dashboard (docs/index.html)
+                                                        # then open docs/index.html in your browser
 pytest                                                  # run the tests
 ```
 
@@ -87,8 +87,9 @@ pytest                                                  # run the tests
 ├── data/delaney-processed.csv        ESOL dataset (MoleculeNet distribution)
 ├── src/chem.py                       loading, descriptors, families, similarity, model
 ├── notebooks/solubility_analysis.ipynb   the full analysis, with outputs
-├── scripts/build_dashboard.py        writes docs/data.json and molecule drawings
-├── docs/                             the dashboard (served by GitHub Pages)
+├── dashboard/                        dashboard source: HTML, CSS, JavaScript, fonts
+├── scripts/build_dashboard.py        builds it into one self-contained page
+├── docs/index.html                   the built dashboard (served by GitHub Pages)
 ├── images/                           charts used in this README
 └── tests/test_chem.py
 ```
@@ -98,7 +99,7 @@ pytest                                                  # run the tests
 ## Data and credits
 
 - Delaney, J. S. "ESOL: Estimating Aqueous Solubility Directly from Molecular Structure." *J. Chem. Inf. Comput. Sci.* 2004, 44, 1000–1005. Accessed through the MoleculeNet benchmark (Wu et al., *Chem. Sci.* 2018). Please cite the original paper if you reuse the data.
-- Fonts in `docs/fonts` (Fraunces, Space Grotesk, JetBrains Mono) are under the SIL Open Font License; licence files are included.
+- Fonts in `dashboard/fonts` (Fraunces, Space Grotesk, JetBrains Mono) are under the SIL Open Font License; licence files are included.
 - Code is released under the [MIT License](LICENSE).
 
 ---

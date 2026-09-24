@@ -1,10 +1,12 @@
-"""Build the data files behind the interactive dashboard in docs/.
+"""Build the interactive dashboard: docs/index.html.
 
     python scripts/build_dashboard.py
 
-Writes docs/data.json (numbers for every chart) and docs/structures/NNNN.svg
-(one structure drawing per molecule, loaded on demand when a molecule is selected).
+Combines dashboard/index.html, style.css and app.js with the analysis numbers and a
+drawing of every molecule into ONE self-contained page, so it works on any host, or
+opened straight from disk, without depending on other files loading.
 """
+import base64
 import json
 import re
 import sys
@@ -20,7 +22,7 @@ sys.path.insert(0, str(ROOT / "src"))
 import chem  # noqa: E402
 
 DOCS = ROOT / "docs"
-STRUCTURES = DOCS / "structures"
+SOURCE = ROOT / "dashboard"
 
 DESCRIPTOR_LABELS = {
     "logP": "logP (oiliness)", "MW": "Molecular weight", "HeavyAtoms": "Heavy atoms", "AromRings": "Aromatic rings",
@@ -135,13 +137,24 @@ def main():
         "columns": MOLECULE_COLUMNS,
         "molecules": molecules,
     }
-    DOCS.mkdir(exist_ok=True)
-    (DOCS / "data.json").write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")))
+    structures = [draw_svg(mol) for mol in df["mol"]]
 
-    STRUCTURES.mkdir(exist_ok=True)
-    for i, mol in enumerate(df["mol"]):
-        (STRUCTURES / f"{i:04d}.svg").write_text(draw_svg(mol))
-    print(f"Wrote docs/data.json and {len(df)} structures to docs/structures/")
+    def embed(obj):  # JSON inside <script> must never contain "</"
+        return json.dumps(obj, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+
+    css = re.sub(r'url\("fonts/([^"]+)"\)',
+                 lambda m: 'url("data:font/woff2;base64,' + base64.b64encode((SOURCE / "fonts" / m.group(1)).read_bytes()).decode() + '")',
+                 (SOURCE / "style.css").read_text())
+    page = (SOURCE / "index.html").read_text()
+    page = re.sub(r'\s*<link rel="preload"[^>]*>', "", page)
+    page = page.replace('<link rel="stylesheet" href="style.css" />', "<style>\n" + css + "</style>")
+    page = page.replace('<script src="app.js" defer></script>',
+                        f'<script type="application/json" id="dashboard-data">{embed(data)}</script>\n'
+                        f'<script type="application/json" id="structure-data">{embed(structures)}</script>\n'
+                        "<script>\n" + (SOURCE / "app.js").read_text() + "</script>")
+    DOCS.mkdir(exist_ok=True)
+    (DOCS / "index.html").write_text(page)
+    print(f"Wrote docs/index.html ({len(page) / 1e6:.1f} MB) with {len(df)} molecule drawings")
 
 
 if __name__ == "__main__":

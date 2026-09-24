@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Solubility Explorer — What makes a molecule dissolve in water?</title>
+  <meta name="description" content="Interactive analysis of measured water solubility for 1,128 molecules (ESOL), a random-forest model's predictions, and the chemical families where it fails." />
+  <meta name="color-scheme" content="dark" />
+  <link rel="preload" href="fonts/space-grotesk-400.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="fonts/fraunces-500.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2314120f'/%3E%3Cpath d='M16 5l9.5 5.5v11L16 27l-9.5-5.5v-11z' fill='none' stroke='%23d7ff3f' stroke-width='2.4'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="top">
+    <a class="top__brand" href="https://github.com/Stevnatsan/molecule-solubility-analysis">molecule-solubility-analysis</a>
+    <nav class="top__nav" aria-label="Project links">
+      <a href="https://github.com/Stevnatsan/molecule-solubility-analysis/blob/main/notebooks/solubility_analysis.ipynb">Notebook</a>
+      <a href="https://github.com/Stevnatsan/molecule-solubility-analysis">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero wrap">
+      <p class="eyebrow">Chemistry · Data analysis · Machine learning</p>
+      <h1>What makes a molecule <em>dissolve</em> in water?</h1>
+      <p class="lede">Measured water solubility for <strong>1,128 molecules</strong> from the ESOL dataset, what a machine-learning model predicts for each one, and the chemical families where it still gets things badly wrong.</p>
+      <dl class="kpis" id="kpis"></dl>
+    </section>
+
+    <section class="explorer wrap" aria-labelledby="explorer-title">
+      <div class="section-head">
+        <h2 id="explorer-title">Explore the molecules</h2>
+        <p>Each dot is one molecule. Hover or tap for details. <span class="swatch swatch--warn"></span> Orange means the model was off by more than 10×.</p>
+      </div>
+
+      <div class="controls">
+        <div class="search">
+          <label for="search">Find a molecule</label>
+          <input id="search" type="search" list="molecule-names" placeholder="e.g. caffeine, DDT, glucose" autocomplete="off" />
+          <datalist id="molecule-names"></datalist>
+          <p class="search__hint" id="search-hint" aria-live="polite"></p>
+        </div>
+        <div class="control-group">
+          <span class="control-label" id="x-label">Horizontal axis</span>
+          <div class="segmented" role="group" aria-labelledby="x-label" id="x-axis"></div>
+        </div>
+        <div class="control-group">
+          <span class="control-label" id="family-label">Highlight a chemical family</span>
+          <div class="chips" role="group" aria-labelledby="family-label" id="families"></div>
+        </div>
+      </div>
+
+      <div class="explorer__grid">
+        <figure class="chart">
+          <div class="chart__frame" id="scatter-frame">
+            <svg id="scatter" role="img" aria-label="Scatter plot of measured solubility against the selected descriptor"></svg>
+            <div class="tooltip" id="tooltip" hidden></div>
+          </div>
+          <figcaption id="scatter-caption"></figcaption>
+        </figure>
+
+        <aside class="molecule" id="molecule" aria-live="polite">
+          <div class="molecule__structure" id="structure"></div>
+          <div class="molecule__body">
+            <p class="molecule__families" id="mol-families"></p>
+            <h3 class="molecule__name" id="mol-name"></h3>
+            <p class="molecule__smiles" id="mol-smiles"></p>
+            <div class="verdict" id="verdict"></div>
+            <div class="scale" id="scale" aria-hidden="true"></div>
+            <dl class="props" id="props"></dl>
+            <p class="neighbour" id="neighbour"></p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="insights wrap" aria-labelledby="insights-title">
+      <div class="section-head">
+        <h2 id="insights-title">What the data says</h2>
+      </div>
+      <div class="insights__grid">
+        <article class="card">
+          <h3>Oiliness drives it</h3>
+          <p>Correlation of each property with measured solubility. Negative means more of it, less soluble.</p>
+          <div class="bars bars--diverging" id="corr-bars"></div>
+        </article>
+        <article class="card">
+          <h3>Where the model struggles</h3>
+          <p>Prediction error (RMSE, log units) by chemical family. Click a family to highlight it above.</p>
+          <div class="bars" id="family-bars"></div>
+        </article>
+        <article class="card">
+          <h3>Unfamiliar molecules</h3>
+          <p>Error grouped by how similar each molecule is to its closest neighbour in the data.</p>
+          <div class="bars" id="similarity-bars"></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="research wrap" aria-labelledby="research-title">
+      <div class="section-head">
+        <h2 id="research-title">Open research questions</h2>
+        <p>The errors aren't random. Each cluster points to something worth testing.</p>
+      </div>
+      <ol class="research__list">
+        <li class="card">
+          <h3>Why are organophosphates under-predicted?</h3>
+          <p>43 phosphorus esters have ~2× the typical error, and they're always <em>more</em> soluble than predicted. Is the Crippen logP method mis-scoring phosphorus?</p>
+          <p class="how"><strong>Test:</strong> compare with measured logP, or retrain with a different logP method, and check whether the bias disappears.</p>
+        </li>
+        <li class="card">
+          <h3>How much is crystal packing?</h3>
+          <p>Rigid, flat, high-melting solids like anthraquinone are <em>less</em> soluble than predicted. Structure alone can't see how tightly a crystal packs.</p>
+          <p class="how"><strong>Test:</strong> add melting point, the key term in the General Solubility Equation, and measure the error drop.</p>
+        </li>
+        <li class="card">
+          <h3>Can the model say "I don't know"?</h3>
+          <p>Molecules with no close neighbour in the data (similarity &lt; 0.4) get ~50% larger errors.</p>
+          <p class="how"><strong>Test:</strong> build an applicability-domain score and check that it ranks the worst predictions first.</p>
+        </li>
+        <li class="card">
+          <h3>How far can more data go?</h3>
+          <p>The learning curve is still falling, from 0.89 to 0.70 as training molecules grow from 90 to 902.</p>
+          <p class="how"><strong>Test:</strong> rerun on a larger curated set such as AqSolDB (~10k compounds) and estimate the measurement-noise floor.</p>
+        </li>
+        <li class="card">
+          <h3>What about drug-like acids?</h3>
+          <p>The dataset has no carboxylic acids and only 9 molecules above 500 g/mol, so it says little about ionisable, drug-sized compounds.</p>
+          <p class="how"><strong>Test:</strong> evaluate on an external set of acids and larger molecules with pH-controlled solubility.</p>
+        </li>
+      </ol>
+    </section>
+  </main>
+
+  <footer class="foot wrap">
+    <p><strong>Method.</strong> 11 RDKit descriptors → random forest, evaluated with 5-fold cross-validation, so every prediction shown comes from a model that never saw that molecule. Solubility is logS = log₁₀(mol/L).</p>
+    <p><strong>Data.</strong> Delaney, J. S. “ESOL: Estimating Aqueous Solubility Directly from Molecular Structure.” <em>J. Chem. Inf. Comput. Sci.</em> 2004, 44, 1000–1005, via MoleculeNet.</p>
+    <p>Built by Steven Nathaniel Santoso · <a href="https://github.com/Stevnatsan/molecule-solubility-analysis">Source on GitHub</a></p>
+  </footer>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
